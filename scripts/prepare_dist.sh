@@ -1,4 +1,4 @@
-#!/bin/bash
+twine upload --repository testpypi dist/*#!/bin/bash
 
 # Clear all the old files to avoid any conflict
 sh ./scripts/clear.sh

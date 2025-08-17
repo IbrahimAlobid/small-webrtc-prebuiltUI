@@ -6,8 +6,6 @@
 import os
 import sys
 
-import cv2
-import numpy as np
 from dotenv import load_dotenv
 from loguru import logger
 
@@ -28,37 +26,6 @@ load_dotenv(override=True)
 logger.remove(0)
 logger.add(sys.stderr, level="DEBUG")
 
-
-class EdgeDetectionProcessor(FrameProcessor):
-    def __init__(self, camera_out_width, camera_out_height: int):
-        super().__init__()
-        self._camera_out_width = camera_out_width
-        self._camera_out_height = camera_out_height
-
-    async def process_frame(self, frame: Frame, direction: FrameDirection):
-        await super().process_frame(frame, direction)
-
-        if isinstance(frame, InputImageRawFrame):
-            # Convert bytes to NumPy array
-            img = np.frombuffer(frame.image, dtype=np.uint8).reshape(
-                (frame.size[1], frame.size[0], 3)
-            )
-
-            # perform edge detection
-            img = cv2.cvtColor(cv2.Canny(img, 100, 200), cv2.COLOR_GRAY2BGR)
-
-            # convert the size if needed
-            desired_size = (self._camera_out_width, self._camera_out_height)
-            if frame.size != desired_size:
-                resized_image = cv2.resize(img, desired_size)
-                frame = OutputImageRawFrame(resized_image.tobytes(), desired_size, frame.format)
-                await self.push_frame(frame)
-            else:
-                await self.push_frame(
-                    OutputImageRawFrame(image=img.tobytes(), size=frame.size, format=frame.format)
-                )
-        else:
-            await self.push_frame(frame, direction)
 
 
 SYSTEM_INSTRUCTION = f"""
@@ -113,9 +80,7 @@ async def run_bot(webrtc_connection):
             context_aggregator.user(),
             rtvi,
             llm,  # LLM
-            EdgeDetectionProcessor(
-                transport_params.camera_out_width, transport_params.camera_out_height
-            ),  # Sending the video back to the user
+   # Sending the video back to the user
             pipecat_transport.output(),
             context_aggregator.assistant(),
         ]
